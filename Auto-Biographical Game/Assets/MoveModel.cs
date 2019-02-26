@@ -4,6 +4,14 @@ using UnityEngine;
 
 public class MoveModel : MonoBehaviour
 {
+
+    public float jumpHoldGravity;
+    public float jumpGravity;
+    public float fallGravity;
+
+
+    public Vector3 velocity;
+
     public float Y_ANGLE_MIN;
     public float Y_ANGLE_MAX;
 
@@ -20,8 +28,7 @@ public class MoveModel : MonoBehaviour
     public KeyCode left;
     public KeyCode right;
 
-    public KeyCode jump;
-    public float jumpForce;
+   
 
     public int speed;
 
@@ -30,9 +37,20 @@ public class MoveModel : MonoBehaviour
 
     private Vector3 movement;
 
+    private Vector3 Gravity = (Physics.gravity * 0.69f);
+
+    public KeyCode jump;
+    public float jumpForce;
+
+    private bool onGround = false;
+
+    public Vector3 camOffset;
+
     // Start is called before the first frame update
     void Start()
     {
+       Physics.gravity = new Vector3(0,fallGravity,0);
+
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
         //transform.position = Vector3.zero;   
@@ -40,6 +58,16 @@ public class MoveModel : MonoBehaviour
 
     // Update is called once per frame
     void Update()
+    {
+        velocity = rb.velocity;
+
+        CameraControlFunction();
+        MovementFunction();
+        JumpFunction();
+    
+    }
+
+    void CameraControlFunction()
     {
         //3rd Person Camera Controls
         currentX += Input.GetAxis("Mouse X") * sensitivityX;
@@ -53,12 +81,17 @@ public class MoveModel : MonoBehaviour
         currentY = Mathf.Clamp(currentY, Y_ANGLE_MIN, Y_ANGLE_MAX);
 
 
-        centerpoint.position = player.position + centerpoint.rotation * new Vector3(-1.5f,.5f,0);
+        centerpoint.position = player.position + centerpoint.rotation * camOffset;
 
         //Player turns with the camera
         Quaternion turnAngle = Quaternion.Euler(0, centerpoint.eulerAngles.y, 0);
         player.rotation = Quaternion.Slerp(player.rotation, turnAngle, Time.deltaTime * 10);
 
+       
+    }
+
+    void MovementFunction()
+    {
         //Player Keyboard Controls
         movement = Vector3.zero;
         if (Input.GetKey(forward))
@@ -77,9 +110,56 @@ public class MoveModel : MonoBehaviour
         {
             movement += Vector3.right;
         }
+        //movement.Normalize();
 
         movement = player.rotation * movement;
-        rb.AddForce(movement * Time.deltaTime * speed + Gravity);
+       // rb.velocity = (movement * Time.deltaTime * speed + Gravity);
+        rb.AddForce(movement * Time.deltaTime * speed, ForceMode.Impulse);
     }
-    Vector3 Gravity = (Physics.gravity * 0.4f);
+
+    void JumpFunction()
+    {
+        //use three separate gravities, one for holding space, one for tapping, one for when youre falling.
+        //make a touching ground state/bool using (raycasting???) or colliders with tags 
+        if (onGround)
+        {
+
+            if (Input.GetKeyDown(jump))
+            {
+                rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+                onGround = false;
+            }
+        }
+        else
+        {
+            if(rb.velocity.y < 0)
+            {
+                Physics.gravity = new Vector3(0, fallGravity, 0);
+            }else if (Input.GetKey(jump))
+            {
+                Physics.gravity = new Vector3(0, jumpHoldGravity, 0);
+            }
+            else
+            {
+                Physics.gravity = new Vector3(0, jumpGravity, 0);
+            }
+
+        }
+    }
+    private void OnCollisionEnter(Collision collision)
+    { 
+        if(collision.gameObject.tag == "ground")
+        {
+            onGround = true;
+        }
+    }
+    private void OnCollisionExit(Collision collision)
+    {
+        if (collision.gameObject.tag == "ground")
+        {
+            onGround = false;
+        }
+    }
+
+
 }
