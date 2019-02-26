@@ -128,6 +128,7 @@ public class MoveModel : MonoBehaviour
             {
                 rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
                 onGround = false;
+                
             }
         }
         else
@@ -145,19 +146,28 @@ public class MoveModel : MonoBehaviour
             }
 
         }
+      /*  if (surfaces <= 0)
+        {
+            onGround = false;
+        }*/
     }
+
+    private int surfaces = 0;
+
     private void OnCollisionEnter(Collision collision)
     { 
         if(collision.gameObject.tag == "ground")
         {
             onGround = true;
+            //surfaces += 1;
         }
     }
     private void OnCollisionExit(Collision collision)
     {
-        if (collision.gameObject.tag == "ground")
+       if(collision.gameObject.tag == "ground")
         {
-            onGround = false;
+            // surfaces -= 1;
+            //onGround = false;
         }
     }
 
