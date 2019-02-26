@@ -106,11 +106,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e3cf05a49aa3f5b4482e8022ac045844, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  jumpHoldGravity: -20
-  jumpGravity: -95
-  fallGravity: -100
+  jumpHoldGravity: -15
+  jumpGravity: -100
+  fallGravity: -140
   velocity: {x: 0, y: 0, z: 0}
-  Y_ANGLE_MIN: -50
+  Y_ANGLE_MIN: -60
   Y_ANGLE_MAX: 10
   player: {fileID: 3649841175247026742}
   camera: {fileID: 0}
@@ -122,7 +122,7 @@ MonoBehaviour:
   left: 97
   right: 100
   speed: 50
-  sensitivityX: 10
+  sensitivityX: 5
   sensitivityY: 2
   jump: 32
   jumpForce: 30
