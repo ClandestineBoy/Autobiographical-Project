@@ -46,6 +46,9 @@ public class MoveModel : MonoBehaviour
 
     public Vector3 camOffset;
 
+    public float downRayDistance;
+    public float wallRayDistance;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -55,16 +58,53 @@ public class MoveModel : MonoBehaviour
         Cursor.visible = false;
         //transform.position = Vector3.zero;   
     }
-
+    Vector3 rayDir = Vector3.zero;
     // Update is called once per frame
     void Update()
     {
         velocity = rb.velocity;
 
+        /* if (Physics.Raycast(myRay, rayDistance))
+         {
+
+         }*/
+
+
         CameraControlFunction();
         MovementFunction();
+        RayCasting();
         JumpFunction();
-    
+    }
+
+    void RayCasting()
+    {
+        if (movement != Vector3.zero)
+        {
+            rayDir = movement;
+        }
+        Ray downRay = new Ray(this.transform.position, Vector3.down);
+        Ray wallRay = new Ray(this.transform.position, rayDir);
+
+        Debug.DrawRay(downRay.origin, new Vector3(0, -downRayDistance, 0), Color.red);
+        Debug.DrawRay(wallRay.origin, rayDir * wallRayDistance, Color.red);
+
+        RaycastHit hit;
+
+        if (Physics.Raycast(downRay.origin, downRay.direction, out hit, downRayDistance))
+        {
+            if (hit.transform.gameObject.tag == "ground")
+            {
+                Debug.Log("ON GROUND");
+                onGround = true;
+            }
+        }
+        else if (Physics.Raycast(wallRay, out hit, wallRayDistance))
+        {
+            if (hit.transform.gameObject.tag == "ground")
+            {
+                Debug.Log("ON WALL");
+            }
+        }
     }
 
     void CameraControlFunction()
@@ -133,10 +173,7 @@ public class MoveModel : MonoBehaviour
         }
         else
         {
-            if(rb.velocity.y < 0)
-            {
-                Physics.gravity = new Vector3(0, fallGravity, 0);
-            }else if (Input.GetKey(jump))
+            if (Input.GetKey(jump))
             {
                 Physics.gravity = new Vector3(0, jumpHoldGravity, 0);
             }
@@ -144,30 +181,25 @@ public class MoveModel : MonoBehaviour
             {
                 Physics.gravity = new Vector3(0, jumpGravity, 0);
             }
-
         }
-      /*  if (surfaces <= 0)
+        if (rb.velocity.y < 0)
         {
-            onGround = false;
-        }*/
+            Physics.gravity = new Vector3(0, fallGravity, 0);
+        }
     }
-
-    private int surfaces = 0;
 
     private void OnCollisionEnter(Collision collision)
     { 
         if(collision.gameObject.tag == "ground")
         {
             onGround = true;
-            //surfaces += 1;
         }
     }
     private void OnCollisionExit(Collision collision)
     {
        if(collision.gameObject.tag == "ground")
         {
-            // surfaces -= 1;
-            //onGround = false;
+            onGround = false;
         }
     }
 
