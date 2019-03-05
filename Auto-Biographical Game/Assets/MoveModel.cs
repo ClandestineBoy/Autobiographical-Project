@@ -43,16 +43,22 @@ public class MoveModel : MonoBehaviour
     public float jumpForce;
 
     private bool onGround = false;
+    private bool onWall = false;
+
+    private Transform currentWall;
 
     public Vector3 camOffset;
 
     public float downRayDistance;
     public float wallRayDistance;
 
+    private Vector3 wallJumpNormal;
+
     // Start is called before the first frame update
     void Start()
     {
        Physics.gravity = new Vector3(0,fallGravity,0);
+        wallJumpNormal = Vector3.zero;
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
@@ -78,7 +84,11 @@ public class MoveModel : MonoBehaviour
 
     void RayCasting()
     {
-        if (movement != Vector3.zero)
+        if (onWall)
+        {
+            rayDir = new Vector3(currentWall.position.x - transform.position.x, 0, currentWall.position.z - transform.position.z);
+        }
+        else if (movement != Vector3.zero)
         {
             rayDir = movement;
         }
@@ -96,14 +106,24 @@ public class MoveModel : MonoBehaviour
             {
                 Debug.Log("ON GROUND");
                 onGround = true;
+                onWall = false;
             }
         }
         else if (Physics.Raycast(wallRay, out hit, wallRayDistance))
         {
-            if (hit.transform.gameObject.tag == "ground")
+            if (hit.transform.gameObject.tag == "ground" && onGround)
             {
                 Debug.Log("ON WALL");
+                onWall = true;
+                onGround = false;
+                wallJumpNormal = hit.normal;
+                currentWall = hit.transform;
             }
+        }
+        else
+        {
+            onWall = false;
+            onGround = false;
         }
     }
 
@@ -163,12 +183,23 @@ public class MoveModel : MonoBehaviour
         //make a touching ground state/bool using (raycasting???) or colliders with tags 
         if (onGround)
         {
-
             if (Input.GetKeyDown(jump))
             {
                 rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
                 onGround = false;
                 
+            }
+        }
+        else if (onWall)
+        {
+            Physics.gravity = Vector3.zero;
+            if (Input.GetKeyDown(jump))
+            {
+                wallJumpNormal *= jumpForce / 2;
+                wallJumpNormal.y = jumpForce;
+                rb.AddForce(wallJumpNormal, ForceMode.Impulse);
+                onWall = false;
+
             }
         }
         else
@@ -181,11 +212,12 @@ public class MoveModel : MonoBehaviour
             {
                 Physics.gravity = new Vector3(0, jumpGravity, 0);
             }
+            if (rb.velocity.y < 0)
+            {
+                Physics.gravity = new Vector3(0, fallGravity, 0);
+            }
         }
-        if (rb.velocity.y < 0)
-        {
-            Physics.gravity = new Vector3(0, fallGravity, 0);
-        }
+        
     }
 
     private void OnCollisionEnter(Collision collision)
