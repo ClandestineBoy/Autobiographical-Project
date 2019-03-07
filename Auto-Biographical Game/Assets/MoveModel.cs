@@ -54,6 +54,7 @@ public class MoveModel : MonoBehaviour
 
     private Vector3 wallJumpNormal;
 
+
     // Start is called before the first frame update
     void Start()
     {
@@ -68,7 +69,7 @@ public class MoveModel : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        velocity = rb.velocity;
+        velocity = movement;
 
         /* if (Physics.Raycast(myRay, rayDistance))
          {
@@ -104,7 +105,7 @@ public class MoveModel : MonoBehaviour
         {
             if (hit.transform.gameObject.tag == "ground")
             {
-                Debug.Log("ON GROUND");
+                //Debug.Log("ON GROUND");
                 onGround = true;
                 onWall = false;
             }
@@ -113,7 +114,7 @@ public class MoveModel : MonoBehaviour
         {
             if (hit.transform.gameObject.tag == "ground" && onGround)
             {
-                Debug.Log("ON WALL");
+                //Debug.Log("ON WALL");
                 onWall = true;
                 onGround = false;
                 wallJumpNormal = hit.normal;
@@ -123,7 +124,6 @@ public class MoveModel : MonoBehaviour
         else
         {
             onWall = false;
-            onGround = false;
         }
     }
 
@@ -143,36 +143,103 @@ public class MoveModel : MonoBehaviour
 
         centerpoint.position = player.position + centerpoint.rotation * camOffset;
 
+
+        Vector3 wallRotation = wallJumpNormal;
         //Player turns with the camera
-        Quaternion turnAngle = Quaternion.Euler(0, centerpoint.eulerAngles.y, 0);
+        Quaternion turnAngle = Quaternion.Euler(0, centerpoint.eulerAngles.y, 0); ;
+        if (onWall)
+        {
+            
+            Quaternion.Euler(wallRotation);
+            if(wallRotation.z == 0)
+            {
+                if (rb.velocity.z > 0)
+                {
+                    turnAngle = Quaternion.Euler(0, 0, 0);
+                }
+                if(rb.velocity.z < 0)
+                {
+                    turnAngle = Quaternion.Euler(0, 180, 0);
+                }
+            }
+            else if (wallRotation.x == 0)
+            {
+                if (rb.velocity.x > 0)
+                {
+                    turnAngle = Quaternion.Euler(0, 90, 0);
+                }
+                if (rb.velocity.x < 0)
+                {
+                    turnAngle = Quaternion.Euler(0, -90, 0);
+                }
+            }
+            else
+            {
+                //the normal of the face the player is colliding with is the hypotenuse in a triange, where that normal's x and z are the triangle's legs.
+                //if we find the cotangent of the angle where the player is colliding, and subtaract it from either 0, 90, 180, or 270 (depending the normal's direction)
+                //we can rotate the player object to be perpendicular to the normal of the face
+                float perpNormal = 90 - Mathf.Rad2Deg*Mathf.Atan(wallJumpNormal.x / wallJumpNormal.z);
+                if(wallJumpNormal.x < 0 && wallJumpNormal.z < 0)
+                {
+                    turnAngle = Quaternion.Euler(0, 0 - perpNormal, 0);
+                }
+                if (wallJumpNormal.x < 0 && wallJumpNormal.z > 0)
+                {
+                    turnAngle = Quaternion.Euler(0, 90 - perpNormal, 0);
+                }
+                if (wallJumpNormal.x > 0 && wallJumpNormal.z > 0)
+                {
+                    turnAngle = Quaternion.Euler(0, 180 - perpNormal, 0);
+                }
+                if (wallJumpNormal.x > 0 && wallJumpNormal.z < 0)
+                {
+                    turnAngle = Quaternion.Euler(0, 0 - perpNormal, 0);
+                }
+
+            }
+
+        }
+        else
+        {
+            turnAngle = Quaternion.Euler(0, centerpoint.eulerAngles.y, 0);
+        }
         player.rotation = Quaternion.Slerp(player.rotation, turnAngle, Time.deltaTime * 10);
 
-       
+      
+       // Debug.Log(wallRotation);
+
     }
 
     void MovementFunction()
     {
         //Player Keyboard Controls
-        movement = Vector3.zero;
-        if (Input.GetKey(forward))
+        if (!onWall)
         {
-            movement += Vector3.forward;
+            movement = Vector3.zero;
+            if (Input.GetKey(forward))
+            {
+                movement += Vector3.forward;
+            }
+            if (Input.GetKey(back))
+            {
+                movement += Vector3.back;
+            }
+            if (Input.GetKey(left))
+            {
+                movement += Vector3.left;
+            }
+            if (Input.GetKey(right))
+            {
+                movement += Vector3.right;
+            }
+            movement.Normalize();
+            movement = player.rotation * movement;
         }
-        if (Input.GetKey(back))
+        else
         {
-            movement += Vector3.back;
-        }
-        if (Input.GetKey(left))
-        {
-            movement += Vector3.left;
-        }
-        if (Input.GetKey(right))
-        {
-            movement += Vector3.right;
-        }
-        //movement.Normalize();
 
-        movement = player.rotation * movement;
+        }
+        
        // rb.velocity = (movement * Time.deltaTime * speed + Gravity);
         rb.AddForce(movement * Time.deltaTime * speed, ForceMode.Impulse);
     }
