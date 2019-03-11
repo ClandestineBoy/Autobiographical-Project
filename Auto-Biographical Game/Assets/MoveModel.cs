@@ -112,11 +112,14 @@ public class MoveModel : MonoBehaviour
         }
         else if (Physics.Raycast(wallRay, out hit, wallRayDistance))
         {
-            if (hit.transform.gameObject.tag == "ground" && onGround)
+            if (hit.transform.gameObject.tag == "ground")
             {
                 //Debug.Log("ON WALL");
-                onWall = true;
-                onGround = false;
+                if (onGround)
+                {
+                    onWall = true;
+                    onGround = false;
+                }
                 wallJumpNormal = hit.normal;
                 currentWall = hit.transform;
             }
@@ -149,9 +152,7 @@ public class MoveModel : MonoBehaviour
         Quaternion turnAngle = Quaternion.Euler(0, centerpoint.eulerAngles.y, 0); ;
         if (onWall)
         {
-            
-            Quaternion.Euler(wallRotation);
-            if(wallRotation.z == 0)
+            if(wallJumpNormal.z == 0)
             {
                 if (rb.velocity.z > 0)
                 {
@@ -162,7 +163,7 @@ public class MoveModel : MonoBehaviour
                     turnAngle = Quaternion.Euler(0, 180, 0);
                 }
             }
-            else if (wallRotation.x == 0)
+            else if (wallJumpNormal.x == 0)
             {
                 if (rb.velocity.x > 0)
                 {
@@ -179,21 +180,33 @@ public class MoveModel : MonoBehaviour
                 //if we find the cotangent of the angle where the player is colliding, and subtaract it from either 0, 90, 180, or 270 (depending the normal's direction)
                 //we can rotate the player object to be perpendicular to the normal of the face
                 float perpNormal = 90 - Mathf.Rad2Deg*Mathf.Atan(wallJumpNormal.x / wallJumpNormal.z);
-                if(wallJumpNormal.x < 0 && wallJumpNormal.z < 0)
+                Debug.Log(Mathf.Abs(rb.velocity.normalized.x) + "    " + Mathf.Abs(wallJumpNormal.x));
+
+                if(wallJumpNormal.z < 0)
                 {
-                    turnAngle = Quaternion.Euler(0, 0 - perpNormal, 0);
+                    if (rb.velocity.x > 0 && rb.velocity.z > 0 || rb.velocity.x > 0 && rb.velocity.z < 0)
+                    {
+                        clockWise = false;
+                        turnAngle = Quaternion.Euler(0, 180 - perpNormal -20, 0);
+                    }
+                    if (rb.velocity.x < 0 && rb.velocity.z < 0 || rb.velocity.x < 0 && rb.velocity.z > 0)
+                    {
+                        clockWise = true;
+                        turnAngle = Quaternion.Euler(0,-perpNormal + 20, 0);
+                    }
                 }
-                if (wallJumpNormal.x < 0 && wallJumpNormal.z > 0)
+                if (wallJumpNormal.z > 0)
                 {
-                    turnAngle = Quaternion.Euler(0, 90 - perpNormal, 0);
-                }
-                if (wallJumpNormal.x > 0 && wallJumpNormal.z > 0)
-                {
-                    turnAngle = Quaternion.Euler(0, 180 - perpNormal, 0);
-                }
-                if (wallJumpNormal.x > 0 && wallJumpNormal.z < 0)
-                {
-                    turnAngle = Quaternion.Euler(0, 0 - perpNormal, 0);
+                    if (rb.velocity.x > 0 && rb.velocity.z > 0 || rb.velocity.x > 0 && rb.velocity.z < 0)
+                    {
+                        clockWise = true;
+                        turnAngle = Quaternion.Euler(0, 180 - perpNormal + 20, 0);
+                    }
+                    if(rb.velocity.x < 0 && rb.velocity.z < 0 || rb.velocity.x < 0 && rb.velocity.z > 0)
+                    {
+                        clockWise = false;
+                        turnAngle = Quaternion.Euler(0,-perpNormal - 20, 0);
+                    }
                 }
 
             }
@@ -209,6 +222,8 @@ public class MoveModel : MonoBehaviour
        // Debug.Log(wallRotation);
 
     }
+
+    private bool clockWise = false;
 
     void MovementFunction()
     {
@@ -237,7 +252,14 @@ public class MoveModel : MonoBehaviour
         }
         else
         {
-
+            if (clockWise)
+            {
+                movement = player.rotation * new Vector3(.9f, 0, 1);
+            }
+            else
+            {
+                movement = player.rotation * new Vector3(-.9f, 0, 1);
+            }
         }
         
        // rb.velocity = (movement * Time.deltaTime * speed + Gravity);
