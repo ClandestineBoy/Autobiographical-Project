@@ -54,10 +54,11 @@ public class MoveModel : MonoBehaviour
 
     private Vector3 wallJumpNormal;
 
-
+    Vector3 startPos;
     // Start is called before the first frame update
     void Start()
     {
+        startPos = transform.position;
        Physics.gravity = new Vector3(0,fallGravity,0);
         wallJumpNormal = Vector3.zero;
 
@@ -75,7 +76,10 @@ public class MoveModel : MonoBehaviour
          {
 
          }*/
-
+         if(transform.position.y < -20)
+        {
+            transform.position = startPos;
+        }
 
         CameraControlFunction();
         MovementFunction();
@@ -103,7 +107,7 @@ public class MoveModel : MonoBehaviour
 
         if (Physics.Raycast(downRay.origin, downRay.direction, out hit, downRayDistance))
         {
-            if (hit.transform.gameObject.tag == "ground")
+            if (hit.transform.gameObject.tag == "ground" && onGround)
             {
                 //Debug.Log("ON GROUND");
                 onGround = true;
@@ -130,6 +134,8 @@ public class MoveModel : MonoBehaviour
         }
     }
 
+
+    bool onFlat = false;
     void CameraControlFunction()
     {
         //3rd Person Camera Controls
@@ -148,12 +154,14 @@ public class MoveModel : MonoBehaviour
 
 
         Vector3 wallRotation = wallJumpNormal;
+
         //Player turns with the camera
         Quaternion turnAngle = Quaternion.Euler(0, centerpoint.eulerAngles.y, 0); ;
         if (onWall)
         {
             if(wallJumpNormal.z == 0)
             {
+                onFlat = true;
                 if (rb.velocity.z > 0)
                 {
                     turnAngle = Quaternion.Euler(0, 0, 0);
@@ -165,6 +173,7 @@ public class MoveModel : MonoBehaviour
             }
             else if (wallJumpNormal.x == 0)
             {
+                onFlat = true;
                 if (rb.velocity.x > 0)
                 {
                     turnAngle = Quaternion.Euler(0, 90, 0);
@@ -176,6 +185,7 @@ public class MoveModel : MonoBehaviour
             }
             else
             {
+                onFlat = false;
                 //the normal of the face the player is colliding with is the hypotenuse in a triange, where that normal's x and z are the triangle's legs.
                 //if we find the cotangent of the angle where the player is colliding, and subtaract it from either 0, 90, 180, or 270 (depending the normal's direction)
                 //we can rotate the player object to be perpendicular to the normal of the face
@@ -187,7 +197,7 @@ public class MoveModel : MonoBehaviour
                     if (rb.velocity.x > 0 && rb.velocity.z > 0 || rb.velocity.x > 0 && rb.velocity.z < 0)
                     {
                         clockWise = false;
-                        turnAngle = Quaternion.Euler(0, 180 - perpNormal -20, 0);
+                        turnAngle = Quaternion.Euler(0, 180 - perpNormal - 20, 0);
                     }
                     if (rb.velocity.x < 0 && rb.velocity.z < 0 || rb.velocity.x < 0 && rb.velocity.z > 0)
                     {
@@ -252,15 +262,20 @@ public class MoveModel : MonoBehaviour
         }
         else
         {
-            if (clockWise)
+            //rb.velocity = Vector3.zero;
+            if (onFlat)
             {
-                movement = player.rotation * new Vector3(.9f, 0, 1);
+                movement = player.rotation * new Vector3(0, 0, 1);
             }
+            else if (clockWise)
+                {
+                    movement = player.rotation * new Vector3(.9f, 0, 1);
+                }
             else
-            {
-                movement = player.rotation * new Vector3(-.9f, 0, 1);
+                {
+                    movement = player.rotation * new Vector3(-.9f, 0, 1);
+                }
             }
-        }
         
        // rb.velocity = (movement * Time.deltaTime * speed + Gravity);
         rb.AddForce(movement * Time.deltaTime * speed, ForceMode.Impulse);
@@ -323,6 +338,12 @@ public class MoveModel : MonoBehaviour
             onGround = false;
         }
     }
-
+    private void OnTriggerEnter(Collider other)
+    {
+        if(other.gameObject.tag == "Finish")
+        {
+            Debug.Log("END");
+        }
+    }
 
 }
